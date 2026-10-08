@@ -1,43 +1,26 @@
 require("dotenv").config();
-
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const User = require("./models/User");
 
-const createAdmin = async () => {
+(async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-
-    console.log("MongoDB connected");
-
-    const adminExists = await User.findOne({
-      email: "admin@jabamockups.com",
-    });
-
-    if (adminExists) {
-      console.log("Admin already exists");
-      await mongoose.disconnect();
+    const email = "admin@jabamockups.com";
+    const existing = await User.findOne({ email });
+    if (existing) {
+      console.log("Admin already exists:", email);
       return;
     }
-
-    const hashedPassword = await bcrypt.hash("Admin12345", 10);
-
-    const admin = await User.create({
-      name: "JABA Admin",
-      email: "admin@jabamockups.com",
-      password: hashedPassword,
-      role: "admin",
-    });
-
+    const password = "Admin12345";
+    const admin = await User.create({ name: "JABA Admin", email, password: await bcrypt.hash(password, 10), role: "admin" });
     console.log("Admin created successfully");
     console.log("Email:", admin.email);
-
-    await mongoose.disconnect();
-    console.log("MongoDB disconnected");
+    console.log("Password:", password);
   } catch (error) {
     console.error("Failed to create admin:", error.message);
-    process.exit(1);
+    process.exitCode = 1;
+  } finally {
+    await mongoose.disconnect();
   }
-};
-
-createAdmin();
+})();
