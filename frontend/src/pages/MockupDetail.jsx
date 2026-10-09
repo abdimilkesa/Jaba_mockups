@@ -1,0 +1,15 @@
+import { useEffect, useState } from 'react'
+import { Link, useParams, useNavigate } from 'react-router-dom'
+import { ArrowLeft, ArrowDownToLine, ArrowUpRight, Download, Tag, ShieldCheck } from 'lucide-react'
+import { api, getErrorMessage, getImageUrl } from '../lib/api'
+import { Loading } from '../components/Loading'
+
+export default function MockupDetail() {
+  const { id } = useParams(); const navigate = useNavigate()
+  const [item, setItem] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState('')
+  useEffect(() => { api.get(`/mockups/${id}`).then(r => setItem(r.data)).catch(e => setError(getErrorMessage(e))).finally(() => setLoading(false)) }, [id])
+  if (loading) return <div className="container detail-loading"><Loading label="Opening mockup…"/></div>
+  if (error || !item) return <div className="container detail-error"><Link to="/browse" className="back-link"><ArrowLeft size={16}/> Back to library</Link><div className="notice notice-error">{error || 'Mockup not found'}</div></div>
+  const download = async () => { try { const response = await api.get(`/mockups/${id}/download`, { responseType: 'blob' }); const url = URL.createObjectURL(response.data); const a = document.createElement('a'); a.href = url; a.download = `${item.title.replace(/[^a-z0-9-_ ]/gi, '').trim() || 'jaba-mockup'}`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url) } catch (e) { setError(getErrorMessage(e)) } }
+  return <section className="detail-page"><div className="container"><Link to="/browse" className="back-link"><ArrowLeft size={16}/> Back to library</Link><div className="detail-grid"><div className="detail-image-panel"><img src={getImageUrl(item.previewImage)} alt={item.title}/><span className="detail-image-caption">JABA MOCKUPS / PREVIEW</span></div><div className="detail-copy"><p className="eyebrow"><span className="eyebrow-line"/> {item.category?.name || 'MOCKUP RESOURCE'}</p><h1>{item.title}</h1><p className="detail-description">{item.description || 'A carefully selected mockup to help you present your creative work with confidence.'}</p><div className="detail-meta"><span><Download size={16}/>{item.downloads || 0} downloads</span><span><ShieldCheck size={16}/>Ready to download</span></div><button className="btn btn-dark download-button" onClick={download}>Download mockup <ArrowDownToLine size={18}/></button>{error && <div className="notice notice-error">{error}</div>}<p className="download-hint">Please check the file format and software compatibility before using the resource.</p>{item.tags?.length > 0 && <div className="tag-section"><p className="eyebrow"><Tag size={13}/> TAGS</p><div className="tag-list">{item.tags.map(tag => <span key={tag}>{tag}</span>)}</div></div>}<div className="detail-help"><span>✳</span><p>Make it yours.<br/><small>Use this resource to give your design a real-world feel.</small></p></div></div></div><div className="detail-bottom"><p>MORE TO DISCOVER</p><Link to="/browse">Back to all mockups <ArrowUpRight size={16}/></Link></div></div></section>
+}
